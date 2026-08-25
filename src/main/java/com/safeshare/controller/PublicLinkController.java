@@ -11,14 +11,17 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import software.amazon.awssdk.core.sync.ResponseTransformer;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.InputStream;
 import java.util.Map;
 
 @RestController
@@ -33,6 +36,10 @@ public class PublicLinkController {
     private final DocumentPreviewService documentPreviewService;
     private final AccessLogService accessLogService;
     private final BotUserAgentFilter botUserAgentFilter;
+    private final S3Client s3Client;
+
+    @Value("${aws.s3.bucket}")
+    private String bucketName;
 
     @GetMapping("/{token}")
     @Operation(summary = "Validate a share link and return its status")
@@ -78,7 +85,12 @@ public class PublicLinkController {
         FileVersion latestVersion = fileService.getLatestVersion(link.getFile().getId());
 
         String fileType = link.getFile().getFileType().toLowerCase();
-        byte[] fileBytes = Files.readAllBytes(Paths.get(latestVersion.getStoragePath()));
+        byte[] fileBytes = s3Client.getObject(
+                GetObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(latestVersion.getStoragePath())
+                        .build(),
+                ResponseTransformer.toBytes()).asByteArray();
 
         MediaType mediaType;
         switch (fileType) {
@@ -93,22 +105,22 @@ public class PublicLinkController {
                 mediaType = MediaType.IMAGE_PNG;
                 break;
             case "docx":
-                String html = documentPreviewService.renderDocxAsHtml(
-                        Paths.get(latestVersion.getStoragePath()),
-                        link.getFile().getOriginalFilename());
-                return ResponseEntity.ok()
-                        .contentType(MediaType.TEXT_HTML)
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
-                        .body(html);
+                try (InputStream is = s3Client.getObject(GetObjectRequest.builder().bucket(bucketName).key(latestVersion.getStoragePath()).build())) {
+                    String html = documentPreviewService.renderDocxAsHtml(is, link.getFile().getOriginalFilename());
+                    return ResponseEntity.ok()
+                            .contentType(MediaType.TEXT_HTML)
+                            .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
+                            .body(html);
+                }
             case "xls":
             case "xlsx":
-                String workbookHtml = documentPreviewService.renderWorkbookAsHtml(
-                        Paths.get(latestVersion.getStoragePath()),
-                        link.getFile().getOriginalFilename());
-                return ResponseEntity.ok()
-                        .contentType(MediaType.TEXT_HTML)
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
-                        .body(workbookHtml);
+                try (InputStream is = s3Client.getObject(GetObjectRequest.builder().bucket(bucketName).key(latestVersion.getStoragePath()).build())) {
+                    String workbookHtml = documentPreviewService.renderWorkbookAsHtml(is, link.getFile().getOriginalFilename());
+                    return ResponseEntity.ok()
+                            .contentType(MediaType.TEXT_HTML)
+                            .header(HttpHeaders.CONTENT_DISPOSITION, "inline")
+                            .body(workbookHtml);
+                }
             default:
                 return ResponseEntity.ok(Map.of(
                         "status", "NO_PREVIEW",
@@ -139,7 +151,12 @@ public class PublicLinkController {
         accessLogService.logAccess(link, request, AccessStatus.SUCCESS, "File downloaded");
 
         FileVersion latestVersion = fileService.getLatestVersion(link.getFile().getId());
-        byte[] fileBytes = Files.readAllBytes(Paths.get(latestVersion.getStoragePath()));
+        byte[] fileBytes = s3Client.getObject(
+                GetObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(latestVersion.getStoragePath())
+                        .build(),
+                ResponseTransformer.toBytes()).asByteArray();
 
         // Apply watermark if enabled and file is PDF
         if (link.getWatermarkEnabled() && "pdf".equalsIgnoreCase(link.getFile().getFileType())) {

@@ -40,11 +40,10 @@ public class SecurityConfig {
                     "/css/**", "/js/**", "/images/**",
                     "/oauth2/**", "/login/oauth2/**",
                     "/api/auth/**", "/public/**",
-                    "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html",
-                    "/favicon.ico"
+                    "/favicon.ico", "/error"
                 ).permitAll()
                 .requestMatchers("/api/**").authenticated()
-                .anyRequest().permitAll()
+                .anyRequest().authenticated()
             )
             .oauth2Login(oauth2 -> oauth2
                 .successHandler(oAuth2SuccessHandler)

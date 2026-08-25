@@ -23,6 +23,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 
+import software.amazon.awssdk.services.s3.S3Client;
+import org.springframework.beans.factory.annotation.Value;
+
 @RestController
 @RequestMapping("/api/files")
 @RequiredArgsConstructor
@@ -30,6 +33,10 @@ import java.util.List;
 public class FileController {
 
     private final FileService fileService;
+    private final S3Client s3Client;
+
+    @Value("${aws.s3.bucket}")
+    private String bucketName;
 
     @PostMapping("/upload")
     @Operation(summary = "Upload a new file")
@@ -89,14 +96,18 @@ public class FileController {
             @AuthenticationPrincipal UserPrincipal principal) throws IOException {
         FileVersion version = fileService.getVersionForDownload(fileId, versionId, principal.getUser());
 
-        FileInputStream inputStream = new FileInputStream(version.getStoragePath());
+        software.amazon.awssdk.core.ResponseInputStream<software.amazon.awssdk.services.s3.model.GetObjectResponse> s3Object =
+                s3Client.getObject(software.amazon.awssdk.services.s3.model.GetObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(version.getStoragePath())
+                        .build());
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=\"" + version.getStoredFilename() + "\"")
                 .contentLength(version.getFileSize())
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(new InputStreamResource(inputStream));
+                .body(new InputStreamResource(s3Object));
     }
 
     @PostMapping("/{fileId}/versions/{versionId}/revert")
