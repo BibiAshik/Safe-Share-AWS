@@ -26,9 +26,3 @@ uploads/
 .env
 src/main/resources/application-local.properties
 src/main/resources/application-local.yml
-
-# Ignore Docker files
-Dockerfile
-docker-compose.yml
-docker-compose.yaml
-.dockerignore

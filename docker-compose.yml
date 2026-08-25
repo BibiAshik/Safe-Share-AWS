@@ -1,56 +1,27 @@
-version: '3.8'
 services:
-  # MySQL Database Service
-  safeshare-mysql:
-    image: mysql:8.0
-    container_name: safeshare-mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-7381580}
-      MYSQL_DATABASE: safeshare_db
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql-data:/var/lib/mysql
-    networks:
-      - safeshare-network
-
-  # Redis Service
-  safeshare-redis:
-    image: redis:7.0-alpine
-    container_name: safeshare-redis
-    ports:
-      - "6381:6379"
-    volumes:
-      - redis-data:/data
-    networks:
-      - safeshare-network
-
-  # SafeShare Application
   safeshare-app:
     build: .
     container_name: safeshare-app
-    ports:
-      - "8080:8080"
-    environment:
-      - SPRING_PROFILES_ACTIVE=local
-      - APP_BASE_URL=http://localhost:8080
-      - DB_URL=jdbc:mysql://safeshare-mysql:3306/safeshare_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-      - DB_USERNAME=root
-      - DB_PASSWORD=${MYSQL_PASSWORD:-7381580}
-      - REDIS_HOST=safeshare-redis
-      - REDIS_PORT=6379
-    depends_on:
-      - safeshare-mysql
-      - safeshare-redis
+    env_file:
+      - .env
+    expose:
+      - "8080"
+    restart: unless-stopped
     networks:
       - safeshare-network
-    volumes:
-      - app-uploads:/app/uploads
 
-volumes:
-  mysql-data:
-  redis-data:
-  app-uploads:
+  nginx:
+    image: nginx:alpine
+    container_name: safeshare-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - safeshare-app
+    restart: unless-stopped
+    networks:
+      - safeshare-network
 
 networks:
   safeshare-network:
