@@ -21,10 +21,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.*;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -36,9 +40,10 @@ public class FileService {
     private final FileMapper fileMapper;
     private final FileVersionMapper fileVersionMapper;
     private final FileTypeValidator fileTypeValidator;
+    private final S3Client s3Client;
 
-    @Value("${app.upload.dir}")
-    private String uploadDir;
+    @Value("${aws.s3.bucket}")
+    private String bucketName;
 
     @Transactional
     public FileResponse uploadFile(MultipartFile file, User owner) throws IOException {
@@ -46,14 +51,15 @@ public class FileService {
             throw new IllegalArgumentException("Invalid file type. Allowed: PDF, JPG, PNG, DOCX, XLS, XLSX, ZIP");
         }
 
-        // Create per-user directory
-        Path userDir = Paths.get(uploadDir, owner.getId().toString());
-        Files.createDirectories(userDir);
-
-        // Save file to disk with UUID prefix
+        // Save file to S3 with UUID prefix in a user-specific folder
         String storedFilename = UUID.randomUUID() + "-" + file.getOriginalFilename();
-        Path filePath = userDir.resolve(storedFilename);
-        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        String s3Key = owner.getId() + "/" + storedFilename;
+        
+        s3Client.putObject(PutObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(s3Key)
+                        .build(),
+                RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
         // Create File entity
         FileEntity fileEntity = FileEntity.builder()
@@ -69,7 +75,7 @@ public class FileService {
                 .versionNumber(1)
                 .storedFilename(storedFilename)
                 .fileSize(file.getSize())
-                .storagePath(filePath.toString())
+                .storagePath(s3Key)
                 .build();
         fileVersionRepository.save(version);
 
@@ -100,11 +106,14 @@ public class FileService {
         file.getShareLinks().forEach(link -> link.setIsActive(false));
         shareLinkRepository.saveAll(file.getShareLinks());
 
-        // Delete all version files from disk
+        // Delete all version files from S3
         for (FileVersion version : file.getVersions()) {
             try {
-                Files.deleteIfExists(Paths.get(version.getStoragePath()));
-            } catch (IOException ignored) {
+                s3Client.deleteObject(DeleteObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(version.getStoragePath())
+                        .build());
+            } catch (Exception ignored) {
             }
         }
 
@@ -124,12 +133,15 @@ public class FileService {
             throw new IllegalArgumentException("Invalid file type. Allowed: PDF, JPG, PNG, DOCX, XLS, XLSX, ZIP");
         }
 
-        // Save to disk
-        Path userDir = Paths.get(uploadDir, owner.getId().toString());
-        Files.createDirectories(userDir);
+        // Save to S3
         String storedFilename = UUID.randomUUID() + "-" + file.getOriginalFilename();
-        Path filePath = userDir.resolve(storedFilename);
-        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+        String s3Key = owner.getId() + "/" + storedFilename;
+        
+        s3Client.putObject(PutObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(s3Key)
+                        .build(),
+                RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
         // Get next version number
         Integer maxVersion = fileVersionRepository.findMaxVersionNumber(fileId);
@@ -139,7 +151,7 @@ public class FileService {
                 .versionNumber(maxVersion + 1)
                 .storedFilename(storedFilename)
                 .fileSize(file.getSize())
-                .storagePath(filePath.toString())
+                .storagePath(s3Key)
                 .build();
         fileVersionRepository.save(version);
 
@@ -186,12 +198,16 @@ public class FileService {
                 .filter(v -> v.getFile().getId().equals(fileId))
                 .orElseThrow(() -> new FileNotFoundException("Version not found"));
 
-        // Copy old file to new location (append-only history)
-        Path oldPath = Paths.get(oldVersion.getStoragePath());
-        Path userDir = Paths.get(uploadDir, owner.getId().toString());
+        // Copy old file to new location in S3 (append-only history)
         String newStoredFilename = UUID.randomUUID() + "-revert-" + oldVersion.getStoredFilename();
-        Path newPath = userDir.resolve(newStoredFilename);
-        Files.copy(oldPath, newPath, StandardCopyOption.REPLACE_EXISTING);
+        String newS3Key = owner.getId() + "/" + newStoredFilename;
+        
+        s3Client.copyObject(CopyObjectRequest.builder()
+                .sourceBucket(bucketName)
+                .sourceKey(oldVersion.getStoragePath())
+                .destinationBucket(bucketName)
+                .destinationKey(newS3Key)
+                .build());
 
         // Create new version with next version number
         Integer maxVersion = fileVersionRepository.findMaxVersionNumber(fileId);
@@ -201,7 +217,7 @@ public class FileService {
                 .versionNumber(maxVersion + 1)
                 .storedFilename(newStoredFilename)
                 .fileSize(oldVersion.getFileSize())
-                .storagePath(newPath.toString())
+                .storagePath(newS3Key)
                 .build();
         fileVersionRepository.save(newVersion);
 

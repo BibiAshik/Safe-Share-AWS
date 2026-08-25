@@ -17,6 +17,9 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Value;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +28,10 @@ public class CleanupSchedulerService {
 
     private final ShareLinkRepository shareLinkRepository;
     private final FileRepository fileRepository;
+    private final S3Client s3Client;
+
+    @Value("${aws.s3.bucket}")
+    private String bucketName;
 
     /**
      * Runs daily at 2 AM.
@@ -83,10 +90,13 @@ public class CleanupSchedulerService {
             fileRepository.findById(fileId).ifPresent(file -> {
                 for (FileVersion version : file.getVersions()) {
                     try {
-                        Files.deleteIfExists(Paths.get(version.getStoragePath()));
-                        log.info("Deleted version from disk: {}", version.getStoragePath());
-                    } catch (IOException e) {
-                        log.error("Failed to delete version from disk: {}", version.getStoragePath(), e);
+                        s3Client.deleteObject(DeleteObjectRequest.builder()
+                                .bucket(bucketName)
+                                .key(version.getStoragePath())
+                                .build());
+                        log.info("Deleted version from S3: {}", version.getStoragePath());
+                    } catch (Exception e) {
+                        log.error("Failed to delete version from S3: {}", version.getStoragePath(), e);
                     }
                 }
                 fileRepository.delete(file);

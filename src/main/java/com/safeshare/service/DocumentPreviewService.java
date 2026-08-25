@@ -27,9 +27,8 @@ public class DocumentPreviewService {
     private static final int MAX_ROWS = 200;
     private static final int MAX_COLUMNS = 30;
 
-    public String renderDocxAsHtml(Path path, String title) throws IOException {
-        try (InputStream inputStream = Files.newInputStream(path);
-             XWPFDocument document = new XWPFDocument(inputStream)) {
+    public String renderDocxAsHtml(InputStream inputStream, String title) throws IOException {
+        try (XWPFDocument document = new XWPFDocument(inputStream)) {
             StringBuilder body = new StringBuilder();
 
             for (IBodyElement element : document.getBodyElements()) {
@@ -58,9 +57,8 @@ public class DocumentPreviewService {
         }
     }
 
-    public String renderWorkbookAsHtml(Path path, String title) throws IOException {
-        try (InputStream inputStream = Files.newInputStream(path);
-             Workbook workbook = WorkbookFactory.create(inputStream)) {
+    public String renderWorkbookAsHtml(InputStream inputStream, String title) throws IOException {
+        try (Workbook workbook = WorkbookFactory.create(inputStream)) {
             DataFormatter formatter = new DataFormatter();
             StringBuilder body = new StringBuilder();
 
