@@ -849,11 +849,30 @@ input, select, textarea {
     bottom: 22%;
 }
 
-.mini-chart {
-    width: 112px;
+.mini-chart-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
     height: 34px;
-    border-bottom: 3px solid #2563eb;
-    border-radius: 0 0 20px 20px;
+    width: 112px;
+}
+
+.mini-chart-bars .bar {
+    flex: 1;
+    background: #2563eb;
+    border-radius: 4px 4px 0 0;
+    animation: trackingBounce 1.5s ease-in-out infinite alternate;
+}
+
+.mini-chart-bars .bar:nth-child(1) { height: 40%; animation-delay: 0.1s; }
+.mini-chart-bars .bar:nth-child(2) { height: 70%; animation-delay: 0.3s; }
+.mini-chart-bars .bar:nth-child(3) { height: 100%; animation-delay: 0.5s; background: #3b82f6; }
+.mini-chart-bars .bar:nth-child(4) { height: 50%; animation-delay: 0.2s; }
+.mini-chart-bars .bar:nth-child(5) { height: 80%; animation-delay: 0.4s; }
+
+@keyframes trackingBounce {
+    0% { transform: scaleY(0.7); transform-origin: bottom; }
+    100% { transform: scaleY(1.1); transform-origin: bottom; }
 }
 
 .landing-features {
