@@ -880,18 +880,12 @@ input, select, textarea {
     border-right: 0;
 }
 
-.landing-feature span {
+.landing-feature .feature-icon {
     grid-row: span 2;
     width: 56px;
     height: 56px;
     border-radius: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #eef5ff;
-    color: #2563eb;
-    font-size: 12px;
-    font-weight: 800;
+    object-fit: cover;
 }
 
 .landing-feature strong {
