@@ -477,21 +477,31 @@ function toDateTimeLocal(value) {
 }
 
 // ---- QR Code ----
-function showQrCode(linkId) {
+async function showQrCode(linkId) {
     const modal = document.getElementById('qrModal');
     if (!modal) return;
 
     const body = modal.querySelector('.modal-body') || modal.querySelector('.card-body');
-    const token = localStorage.getItem('safeshare_token');
 
-    body.innerHTML = `
-        <div class="qr-container">
-            <img src="/api/links/${linkId}/qrcode" alt="QR Code" onerror="this.alt='Failed to load QR code'">
-            <p class="text-muted" style="margin-top:12px;font-size:13px">Scan to open the share link</p>
-        </div>
-    `;
-
+    body.innerHTML = '<div class="text-center text-muted" style="padding:20px">Loading QR Code...</div>';
     openModal(modal);
+
+    try {
+        const response = await apiFetch(`/api/links/${linkId}/qrcode`);
+        if (!response || !response.ok) throw new Error('Failed to load QR code');
+
+        const blob = await response.blob();
+        const imageUrl = URL.createObjectURL(blob);
+
+        body.innerHTML = `
+            <div class="qr-container">
+                <img src="${imageUrl}" alt="QR Code" onerror="this.alt='Failed to load QR code'">
+                <p class="text-muted" style="margin-top:12px;font-size:13px">Scan to open the share link</p>
+            </div>
+        `;
+    } catch (error) {
+        body.innerHTML = `<div class="text-center text-danger" style="padding:20px">Failed to load QR Code.</div>`;
+    }
 }
 
 // ---- Access Logs ----
