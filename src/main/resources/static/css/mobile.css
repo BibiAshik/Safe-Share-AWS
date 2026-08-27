@@ -36,6 +36,7 @@
     .landing-brand img {
         height: 44px;
         mix-blend-mode: multiply;
+        filter: brightness(1.05) contrast(1.2);
     }
 
     .landing-nav .btn {
