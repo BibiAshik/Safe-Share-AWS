@@ -111,8 +111,8 @@ function showGeneratedLink(linkData, modal) {
                 <button class="btn btn-primary btn-sm" onclick="copyLink('generatedLink')">Copy</button>
             </div>
 
-            <div class="qr-container" style="padding:0;margin-bottom:16px">
-                <img src="${linkData.qrCodeUrl}" alt="QR Code" style="width:180px;height:180px">
+            <div class="qr-container" style="padding:0;margin-bottom:16px" id="successQrContainer">
+                <div class="text-muted" style="font-size:13px">Loading QR Code...</div>
             </div>
 
             <div class="link-item-stats" style="justify-content:center;margin-bottom:20px">
@@ -124,4 +124,21 @@ function showGeneratedLink(linkData, modal) {
             <button class="btn btn-secondary" onclick="closeModal(document.getElementById('shareModal'))">Close</button>
         </div>
     `;
+
+    // Fetch QR Code securely
+    const qrContainer = body.querySelector('#successQrContainer');
+    if (qrContainer && linkData.id) {
+        apiFetch(`/api/links/${linkData.id}/qrcode`)
+            .then(response => {
+                if (!response || !response.ok) throw new Error();
+                return response.blob();
+            })
+            .then(blob => {
+                const imageUrl = URL.createObjectURL(blob);
+                qrContainer.innerHTML = `<img src="${imageUrl}" alt="QR Code" style="width:180px;height:180px">`;
+            })
+            .catch(() => {
+                qrContainer.innerHTML = `<div class="text-danger">Failed to load QR Code</div>`;
+            });
+    }
 }
