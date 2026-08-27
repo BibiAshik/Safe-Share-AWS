@@ -861,7 +861,6 @@ input, select, textarea {
     flex: 1;
     background: #2563eb;
     border-radius: 4px 4px 0 0;
-    animation: trackingBounce 1.5s ease-in-out infinite alternate;
 }
 
 .mini-chart-bars .bar:nth-child(1) { height: 40%; animation-delay: 0.1s; }
