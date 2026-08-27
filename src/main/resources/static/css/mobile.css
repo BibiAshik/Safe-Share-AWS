@@ -34,7 +34,7 @@
     }
 
     .landing-brand img {
-        height: 44px;
+        height: 52px;
     }
 
     .landing-brand .logo-desktop {
@@ -43,6 +43,9 @@
 
     .landing-brand .logo-mobile {
         display: block;
+        border-radius: 24px;
+        -webkit-mask-image: radial-gradient(ellipse at center, black 70%, transparent 100%);
+        mask-image: radial-gradient(ellipse at center, black 70%, transparent 100%);
     }
 
     .landing-nav .btn {
