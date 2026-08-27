@@ -273,6 +273,13 @@ function formatSize(bytes) {
  */
 function formatDate(dateStr) {
     if (!dateStr) return '-';
+    
+    // AWS server sends UTC time without the Z suffix, causing browsers to assume it's already local time.
+    // We append Z to force the browser to treat it as UTC and convert it to the user's actual local time.
+    if (typeof dateStr === 'string' && !dateStr.endsWith('Z')) {
+        dateStr += 'Z';
+    }
+    
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', {
         year: 'numeric',
