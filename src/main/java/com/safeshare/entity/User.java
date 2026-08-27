@@ -3,7 +3,7 @@ package com.safeshare.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
-
+import java.io.Serializable;
 @Entity
 @Table(name = "users")
 @Getter
@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User {
+public class User implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
