@@ -110,29 +110,34 @@
                 <button class="modal-close" type="button" aria-label="Close">&times;</button>
             </div>
             <div class="card-body">
-                <form id="shareLinkForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="shareExpiry">Expiry Date & Time</label>
-                            <input type="datetime-local" class="form-control" id="shareExpiry">
+                <div id="shareFormContainer">
+                    <form id="shareLinkForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="shareExpiry">Expiry Date & Time</label>
+                                <input type="datetime-local" class="form-control" id="shareExpiry">
+                            </div>
+                            <div class="form-group">
+                                <label for="shareMaxDownloads">Max Downloads</label>
+                                <input type="number" class="form-control" id="shareMaxDownloads" min="1" placeholder="e.g. 10">
+                            </div>
+                        </div>
+                        <div class="form-group" id="shareWatermarkGroup">
+                            <label for="sharePassword">Password (optional)</label>
+                            <input type="password" class="form-control" id="sharePassword" placeholder="Leave empty for no password">
                         </div>
                         <div class="form-group">
-                            <label for="shareMaxDownloads">Max Downloads</label>
-                            <input type="number" class="form-control" id="shareMaxDownloads" min="1" placeholder="e.g. 10">
+                            <div class="toggle-wrapper">
+                                <input type="checkbox" class="toggle" id="shareWatermark">
+                                <label for="shareWatermark" style="margin-bottom:0;cursor:pointer">Enable PDF watermark</label>
+                            </div>
                         </div>
-                    </div>
-                    <div class="form-group" id="shareWatermarkGroup">
-                        <label for="sharePassword">Password (optional)</label>
-                        <input type="password" class="form-control" id="sharePassword" placeholder="Leave empty for no password">
-                    </div>
-                    <div class="form-group">
-                        <div class="toggle-wrapper">
-                            <input type="checkbox" class="toggle" id="shareWatermark">
-                            <label for="shareWatermark" style="margin-bottom:0;cursor:pointer">Enable PDF watermark</label>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-lg" style="width:100%;margin-top:8px">Generate Link</button>
-                </form>
+                        <button type="submit" class="btn btn-primary btn-lg" style="width:100%;margin-top:8px">Generate Link</button>
+                    </form>
+                </div>
+                <div id="shareSuccessContainer" class="hidden">
+                    <!-- Populated dynamically -->
+                </div>
             </div>
         </div>
     </div>

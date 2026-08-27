@@ -11,6 +11,15 @@ function openShareModal(fileId, fileType = '') {
     const form = document.getElementById('shareLinkForm');
     if (form) form.reset();
 
+    // Reset UI state
+    const formContainer = document.getElementById('shareFormContainer');
+    const successContainer = document.getElementById('shareSuccessContainer');
+    if (formContainer && successContainer) {
+        formContainer.classList.remove('hidden');
+        successContainer.classList.add('hidden');
+        successContainer.innerHTML = ''; // Clear old success data
+    }
+
     // Store fileId for submission
     modal.dataset.fileId = fileId;
     modal.dataset.fileType = (fileType || '').toLowerCase();
@@ -92,16 +101,22 @@ async function handleCreateShareLink(e) {
 
     } catch (error) {
         showToast(error.message || 'Failed to create link', 'error');
+    } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Generate Link';
     }
 }
 
 function showGeneratedLink(linkData, modal) {
-    const body = modal.querySelector('.card-body') || modal.querySelector('.modal-body');
-    if (!body) return;
+    const formContainer = document.getElementById('shareFormContainer');
+    const successContainer = document.getElementById('shareSuccessContainer');
+    if (!formContainer || !successContainer) return;
 
-    body.innerHTML = `
+    // Toggle visibility
+    formContainer.classList.add('hidden');
+    successContainer.classList.remove('hidden');
+
+    successContainer.innerHTML = `
         <div style="text-align:center;padding:20px 0">
             <div style="font-size:40px;margin-bottom:12px">🔗</div>
             <h3 style="margin-bottom:16px;font-size:18px">Link Created!</h3>
@@ -126,7 +141,7 @@ function showGeneratedLink(linkData, modal) {
     `;
 
     // Fetch QR Code securely
-    const qrContainer = body.querySelector('#successQrContainer');
+    const qrContainer = successContainer.querySelector('#successQrContainer');
     if (qrContainer && linkData.id) {
         apiFetch(`/api/links/${linkData.id}/qrcode`)
             .then(response => {
