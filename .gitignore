@@ -56,3 +56,9 @@ application-local.yml
 .mvn/
 mvnw
 mvnw.cmd
+
+### Scratch Files ###
+/image*.png
+/image.png
+/SafeShare-Build-Prompt.md
+/diff.txt
