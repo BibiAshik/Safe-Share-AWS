@@ -35,8 +35,14 @@
 
     .landing-brand img {
         height: 44px;
-        mix-blend-mode: multiply;
-        filter: brightness(1.05) contrast(1.2);
+    }
+
+    .landing-brand .logo-desktop {
+        display: none;
+    }
+
+    .landing-brand .logo-mobile {
+        display: block;
     }
 
     .landing-nav .btn {

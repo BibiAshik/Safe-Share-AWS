@@ -661,6 +661,10 @@ input, select, textarea {
     width: auto;
 }
 
+.logo-mobile {
+    display: none;
+}
+
 .landing-shell {
     position: relative;
     z-index: 1;
