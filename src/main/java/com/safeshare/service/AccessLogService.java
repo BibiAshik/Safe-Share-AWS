@@ -40,7 +40,7 @@ public class AccessLogService {
                 .map(accessLogMapper::toResponse);
     }
 
-    private String getClientIp(HttpServletRequest request) {
+    public String getClientIp(HttpServletRequest request) {
         String ip = request.getHeader("X-Forwarded-For");
         if (ip == null || ip.isBlank()) {
             ip = request.getHeader("X-Real-IP");

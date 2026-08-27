@@ -23,8 +23,7 @@ public class WatermarkService {
      */
     public byte[] addWatermark(byte[] pdfBytes, String accessInfo) throws IOException {
         try (PDDocument document = Loader.loadPDF(pdfBytes)) {
-            String watermarkText = "Downloaded by " + accessInfo + " on "
-                    + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            String watermarkText = accessInfo;
 
             for (PDPage page : document.getPages()) {
                 PDRectangle mediaBox = page.getMediaBox();

@@ -96,6 +96,9 @@ public class PublicLinkController {
         switch (fileType) {
             case "pdf":
                 mediaType = MediaType.APPLICATION_PDF;
+                if (link.getWatermarkEnabled()) {
+                    fileBytes = watermarkService.addWatermark(fileBytes, accessLogService.getClientIp(request));
+                }
                 break;
             case "jpg":
             case "jpeg":
@@ -160,7 +163,7 @@ public class PublicLinkController {
 
         // Apply watermark if enabled and file is PDF
         if (link.getWatermarkEnabled() && "pdf".equalsIgnoreCase(link.getFile().getFileType())) {
-            String accessInfo = "anonymous";
+            String accessInfo = accessLogService.getClientIp(request);
             fileBytes = watermarkService.addWatermark(fileBytes, accessInfo);
         }
 
