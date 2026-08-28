@@ -4,7 +4,8 @@
   # SafeShare — Secure File Sharing Platform
 
   <p>
-    <strong>A highly secure, robust, and beautiful file-sharing application built with Spring Boot and Vanilla JS.</strong>
+    <strong>A highly secure, robust, and beautiful file-sharing application built with Spring Boot and Vanilla JS.</strong><br><br>
+    <a href="https://safeshare-app.duckdns.org"><strong>🔴 Live Demo: safeshare-app.duckdns.org</strong></a>
   </p>
 
   <p>
@@ -79,62 +80,53 @@ Whether you need to share a confidential PDF with a client or send a secure ZIP 
 
 ---
 
-## 🚀 Getting Started (Local Development)
+## ☁️ AWS Production Infrastructure
 
-To run SafeShare locally on your machine, follow these steps:
+SafeShare is architected for enterprise-grade scalability and relies on the following managed AWS services for production deployment:
 
-### Prerequisites
-- [Java 17](https://adoptium.net/) installed
-- [Maven](https://maven.apache.org/) installed
-- [Docker & Docker Compose](https://www.docker.com/) installed
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/yourusername/SafeShare.git
-cd SafeShare
-```
-
-### 2. Start the Database and Redis
-We have provided a `docker-compose.yml` to instantly spin up MySQL and Redis locally.
-```bash
-docker-compose up -d
-```
-
-### 3. Configure Local Credentials
-Create a `src/main/resources/application-local.properties` file to store your real passwords safely (this file is ignored by git).
-```properties
-spring.datasource.password=your_mysql_password
-app.jwt.secret=YourSuperSecretKeyGoesHere!!
-spring.security.oauth2.client.registration.google.client-id=your_client_id
-spring.security.oauth2.client.registration.google.client-secret=your_client_secret
-spring.mail.username=your_email@gmail.com
-spring.mail.password=your_app_password
-```
-
-### 4. Run the Application
-Run the Spring Boot application using the Maven wrapper:
-```bash
-./mvnw spring-boot:run -Dspring-boot.run.profiles=local
-```
-
-### 5. Access the App
-- **Web Application:** `http://localhost:8080`
-- **Swagger API Docs:** `http://localhost:8080/swagger-ui.html`
+1. **Amazon EC2:** Hosts the Spring Boot Docker container and the NGINX Reverse Proxy.
+2. **Amazon RDS (MySQL):** Managed relational database for storing user accounts, share links, and access logs.
+3. **Amazon S3:** Highly durable object storage for user-uploaded files (configured via storage properties).
+4. **Amazon ElastiCache (Redis):** In-memory data store required for atomic rate-limiting and distributed session management across multiple EC2 instances.
 
 ---
 
-## ☁️ Deployment (Railway)
+## 🚀 Deployment Steps
 
-SafeShare is heavily optimized for zero-config deployments on **Railway**. 
+### 1. Provision Infrastructure
+Set up your EC2 instance, RDS MySQL database, S3 bucket, and ElastiCache Redis cluster via the AWS Console or Terraform. Ensure your EC2 security groups allow inbound traffic on ports `80` and `443`.
 
-1. Push your repository to GitHub.
-2. Connect your GitHub repository to a new Railway project.
-3. Add a **MySQL** and **Redis** plugin in your Railway environment.
-4. Set the `SPRING_PROFILES_ACTIVE` environment variable to `prod`.
-5. Add your credentials (`DB_PASSWORD`, `JWT_SECRET`, etc.) to the Railway **Variables** tab.
-6. **Important:** Add a Railway **Volume** mounted to `/app/uploads` and set `APP_UPLOAD_DIR=/app/uploads` so user files persist across deployments.
+### 2. Configure Production Credentials
+Create a `.env` file in the root directory of your EC2 instance containing your sensitive production variables (this file is ignored by git).
+```env
+# Database (RDS)
+DB_URL=jdbc:mysql://your-rds-endpoint.amazonaws.com:3306/safeshare_db
+DB_USERNAME=admin
+DB_PASSWORD=your_secure_rds_password
 
-Railway will automatically build and deploy the application flawlessly!
+# Redis (ElastiCache)
+REDIS_HOST=your-elasticache-endpoint.amazonaws.com
+REDIS_PORT=6379
+
+# Application Secrets
+JWT_SECRET=YourSuperSecretKeyGoesHere!!
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_client_secret
+MAIL_USERNAME=your_email@gmail.com
+MAIL_PASSWORD=your_app_password
+```
+
+### 3. Deploy using Docker Compose
+The provided `docker-compose.yml` file will automatically build the Spring Boot application using a multi-stage Dockerfile and connect it to your managed AWS services.
+```bash
+docker-compose --env-file .env up -d --build
+```
+
+### 4. Set up NGINX Reverse Proxy & SSL
+We have included an `nginx/nginx-ssl.example.conf` file as a blueprint. 
+1. Use Certbot to generate Let's Encrypt SSL certificates for your domain.
+2. Copy the NGINX configuration to your server's `/etc/nginx/nginx.conf`.
+3. Restart NGINX. It will securely route HTTPS traffic into your Dockerized SafeShare application and handle 25MB file upload proxying.
 
 ---
 
